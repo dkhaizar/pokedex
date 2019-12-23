@@ -1,36 +1,61 @@
 var pokedex = document.getElementById('pokedex'); //untuk mengambil sebuah value pada inputan yang ada di HTML
 
-var fetchPokemon = () => {
-    var promises = [];
-    for (let i = 1; i <= 151; i++) {
-        var url = `https://pokeapi.co/api/v2/pokemon/${i}`;
-        promises.push(fetch(url).then((res) => res.json()));
-    }
-    Promise.all(promises).then((result) => {
-        var pokemon = result.map((data) => ({
-            name: data.name,
-            image: data.sprites['front_default'], //pake front default karena tampilan default pokemon, karena ada yang front shiny yang berarti nampilin shiny pokemon
-            type: data.types.map((type) => type.type.name).join(', '),  //fungsi map untuk melintasi array dari kiri ke kanan dan fungsi join untuk mengubah menjadi string karena type pokemon sebelumnya dalam bentuk array
-            id: data.id
+var fetchPokemon = async () => {
+    var url = `https://pokeapi.co/api/v2/pokemon?limit=151`;
+    var res = await fetch(url);
+    var data = await res.json();
+    var pokemon = data.results.map((result, index) =>
+        ({
+            name: result.name,
+            id: index + 1,
+            image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${index + 1}.png`
         }));
-        displayPokemon(pokemon);
-    });
+    displayPokemon(pokemon);
 };
 
 var displayPokemon = (pokemon) => {
-    console.log(pokemon);
     var pokemonHTMLString = pokemon
         .map(
             (pokeman) => `
-        <li class="card">
+        <li class="card" onClick="selectPokemon(${pokeman.id})">
             <img class="card-image" src="${pokeman.image}"/>
             <h2 class="card-title">${pokeman.id}. ${pokeman.name}</h2>
-            <p class="card-subtitle">Type: ${pokeman.type}</p>
         </li>
     `
         )
         .join('');
     pokedex.innerHTML = pokemonHTMLString;  //nampilin output ke elemen HTML, dengan variabel pokemon yang menyimpan kartu
+};
+
+var selectPokemon = async (id) => {
+    var url = `https://pokeapi.co/api/v2/pokemon/${id}`;
+    var res = await fetch(url);
+    var pokeman = await res.json();
+    displayPopup(pokeman);
+};
+
+var displayPopup = (pokeman) => {
+    var type = pokeman.types.map((type) =>
+        type.type.name).join(', ');
+    var image = pokeman.sprites['front_default'];
+    const htmlString = `
+    <div class="popup">
+    <button id = "closeBtn" onclick = "closePopup()">Close</button>
+        <div class="card">
+        <img class="card-image" src="${image}"/>
+        <h2 class="card-title">${pokeman.id}. ${pokeman.name}</h2>
+        <p><small>Height: </small>${pokeman.height} | <small>Weight: </small>${pokeman.weight} |
+        <small>Type: </small>${type}  
+        </div>
+    </div>
+    `;
+    pokedex.innerHTML = htmlString + pokedex.innerHTML;
+    console.log(htmlString);
+};
+
+var closePopup = () => {
+    var popup = document.querySelector('.popup');
+    popup.parentElement.removeChild(popup);
 };
 
 fetchPokemon();
